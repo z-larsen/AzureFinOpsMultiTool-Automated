@@ -5,7 +5,7 @@
 ![Azure Automation](https://img.shields.io/badge/Azure-Automation-0078D4?logo=microsoftazure&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
-The automated version of the [Azure FinOps Multitool](https://github.com/z-larsen/Azure-FinOps-Multitool). Same 21 scan modules running unattended in Azure Automation on a daily schedule, delivering an HTML assessment report to your inbox every morning.
+The automated version of the [Azure FinOps Multitool](https://github.com/z-larsen/Azure-FinOps-Multitool). Same 21 scan modules running unattended in Azure Automation on a daily schedule, delivering an HTML assessment report to your inbox every day.
 
 ---
 
