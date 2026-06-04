@@ -1,0 +1,33 @@
+# ── Scan Scope ──────────────────────────────────────────────────────
+# "subscription" = scan only the subscription you deploy into (default)
+# "tenant"       = scan all subscriptions in the tenant (requires MG-level RBAC)
+# scan_scope = "tenant"
+
+# Management group ID for tenant-wide scanning (only used when scan_scope = "tenant")
+# Leave empty to use the tenant root management group
+# management_group_id = "YOUR-MG-ID"
+
+# ── Email Report (recommended) ─────────────────────────────────────
+# Semicolon-separated email addresses to receive the daily HTML report
+# After deployment, authorize the Office 365 connector in the Azure portal:
+#   Portal > API Connections > office365-finops-scanner > Edit API connection > Authorize
+report_recipients = "you@company.com"
+
+# ── Optional ────────────────────────────────────────────────────────
+# Restrict to specific subscriptions (comma-separated)
+# subscription_filter = "sub-id-1,sub-id-2"
+
+# Grant RBAC on additional subscriptions beyond the scan scope
+# additional_rbac_scopes = [
+#   "/subscriptions/ANOTHER-SUB-ID"
+# ]
+
+# Customize naming and location
+# project_name  = "finops-scanner"
+# location      = "centralus"
+# scan_schedule = "0 0 6 * * *"
+
+# ── Azure Workbook Dashboard (optional) ────────────────────────────
+# Deploys a Log Analytics workspace + custom tables + interactive workbook
+# This is an advanced option; the HTML email report covers most needs
+# enable_workbook = true

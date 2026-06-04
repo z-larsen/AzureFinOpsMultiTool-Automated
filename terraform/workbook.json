@@ -1,0 +1,582 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "# FinOps Scanner Dashboard\nAutomated daily scan results from your Azure environment. Data refreshes every 24 hours via Azure Automation."
+      },
+      "name": "title"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "a0b1c2d3-e4f5-6789-abcd-ef0123456789",
+            "version": "KqlParameterItem/1.0",
+            "name": "TimeRange",
+            "type": 4,
+            "isRequired": true,
+            "typeSettings": {
+              "selectableValues": [
+                { "durationMs": 86400000, "displayText": "Last 24 hours" },
+                { "durationMs": 604800000, "displayText": "Last 7 days" },
+                { "durationMs": 2592000000, "displayText": "Last 30 days" },
+                { "durationMs": 7776000000, "displayText": "Last 90 days" }
+              ]
+            },
+            "value": { "durationMs": 604800000 }
+          },
+          {
+            "id": "b1c2d3e4-f5a6-7890-bcde-f01234567890",
+            "version": "KqlParameterItem/1.0",
+            "name": "selectedTab",
+            "type": 1,
+            "isHiddenWhenLocked": true,
+            "value": "overview"
+          }
+        ],
+        "style": "pills"
+      },
+      "name": "parameters"
+    },
+    {
+      "type": 11,
+      "content": {
+        "version": "LinkItem/1.0",
+        "style": "tabs",
+        "links": [
+          { "id": "t1", "cellValue": "overview",  "linkTarget": "parameter", "linkLabel": "Cost Overview",        "subTarget": "selectedTab", "preText": "Cost Overview" },
+          { "id": "t2", "cellValue": "trend",     "linkTarget": "parameter", "linkLabel": "Cost Trend",           "subTarget": "selectedTab", "preText": "Cost Trend" },
+          { "id": "t3", "cellValue": "waste",     "linkTarget": "parameter", "linkLabel": "Waste & Optimization", "subTarget": "selectedTab", "preText": "Waste & Optimization" },
+          { "id": "t4", "cellValue": "budgets",   "linkTarget": "parameter", "linkLabel": "Budget Risk",          "subTarget": "selectedTab", "preText": "Budget Risk" },
+          { "id": "t5", "cellValue": "resources", "linkTarget": "parameter", "linkLabel": "Resource Costs",       "subTarget": "selectedTab", "preText": "Resource Costs" },
+          { "id": "t6", "cellValue": "health",    "linkTarget": "parameter", "linkLabel": "Scan Health",          "subTarget": "selectedTab", "preText": "Scan Health" }
+        ]
+      },
+      "name": "tabs"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsScanSummary_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *)\n| project\n    Subscriptions = SubCount,\n    ['Month-to-Date'] = strcat('$', tostring(round(TotalActual, 2))),\n    ['Forecast (EOM)'] = strcat('$', tostring(round(TotalForecast, 2))),\n    ['Last Scan'] = format_datetime(TimeGenerated, 'yyyy-MM-dd HH:mm')",
+              "size": 4,
+              "title": "Current Month Summary",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": { "columnMatch": "Subscriptions", "formatter": 1 },
+                "leftContent": { "columnMatch": "Month-to-Date", "formatter": 1 },
+                "rightContent": { "columnMatch": "Forecast (EOM)", "formatter": 1 },
+                "secondaryContent": { "columnMatch": "Last Scan", "formatter": 1 },
+                "showBorder": true
+              }
+            },
+            "name": "summary-tiles"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsCosts_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by SubscriptionId\n| project SubscriptionName, Actual = round(Actual, 2), Forecast = round(Forecast, 2)\n| order by Actual desc",
+              "size": 0,
+              "title": "Cost by Subscription",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "SubscriptionName",
+                "yAxis": ["Actual", "Forecast"],
+                "seriesLabelSettings": [
+                  { "seriesName": "Actual", "label": "Actual (MTD)", "color": "blue" },
+                  { "seriesName": "Forecast", "label": "Forecast (EOM)", "color": "lightBlue" }
+                ]
+              }
+            },
+            "name": "cost-by-sub-chart"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsCosts_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by SubscriptionId\n| project Subscription = SubscriptionName, ['Actual (MTD)'] = round(Actual, 2), ['Forecast (EOM)'] = round(Forecast, 2), Currency\n| order by ['Actual (MTD)'] desc",
+              "size": 0,
+              "title": "Cost Details",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  { "columnMatch": "Actual", "formatter": 0, "numberFormat": { "unit": 0, "options": { "style": "decimal", "minimumFractionDigits": 2 } } },
+                  { "columnMatch": "Forecast", "formatter": 0, "numberFormat": { "unit": 0, "options": { "style": "decimal", "minimumFractionDigits": 2 } } }
+                ]
+              }
+            },
+            "name": "cost-table"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "overview"
+      },
+      "name": "group-overview"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsScanSummary_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *)\n| extend DaysRemaining = datetime_diff('day', endofmonth(now()), now())\n| extend DailyBurnRate = iff(dayofmonth(now()) > 0, round(TotalActual / dayofmonth(now()), 2), 0.0)\n| extend ProjectedTotal = round(TotalActual + (DailyBurnRate * DaysRemaining), 2)\n| project ['Daily Burn Rate'] = strcat('$', tostring(DailyBurnRate)), ['Days Left in Month'] = DaysRemaining, ['Current Spend'] = strcat('$', tostring(round(TotalActual, 2))), ['Projected EOM'] = strcat('$', tostring(ProjectedTotal))",
+              "size": 4,
+              "title": "Burn Rate Analysis",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": { "columnMatch": "Daily Burn Rate", "formatter": 1 },
+                "leftContent": { "columnMatch": "Current Spend", "formatter": 1 },
+                "rightContent": { "columnMatch": "Projected EOM", "formatter": 1 },
+                "secondaryContent": { "columnMatch": "Days Left in Month", "formatter": 1 },
+                "showBorder": true
+              }
+            },
+            "name": "burn-rate"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsCostTrend_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by Month\n| order by Month asc\n| extend PrevAmount = prev(Amount)\n| extend DeltaPct = iff(isnotnull(PrevAmount) and PrevAmount > 0, round((Amount - PrevAmount) / PrevAmount * 100, 1), 0.0)\n| project Month, Amount = round(Amount, 2), DeltaPct",
+              "size": 0,
+              "title": "Monthly Cost Trend",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "Month",
+                "yAxis": ["Amount"],
+                "seriesLabelSettings": [
+                  { "seriesName": "Amount", "label": "Total Spend ($)", "color": "blue" }
+                ]
+              }
+            },
+            "name": "trend-line"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsCostTrend_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by Month\n| order by Month asc\n| extend PrevAmount = prev(Amount)\n| extend ['Delta %'] = iff(isnotnull(PrevAmount) and PrevAmount > 0, round((Amount - PrevAmount) / PrevAmount * 100, 1), 0.0)\n| extend ['Delta $'] = iff(isnotnull(PrevAmount), round(Amount - PrevAmount, 2), 0.0)\n| project Month, ['Total ($)'] = round(Amount, 2), ['Delta $'], ['Delta %'], Currency\n| order by Month desc",
+              "size": 0,
+              "title": "Month-over-Month Change",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Delta %",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        { "operator": ">", "thresholdValue": "10", "representation": "redBright", "text": "+{0}%" },
+                        { "operator": ">", "thresholdValue": "0", "representation": "orange", "text": "+{0}%" },
+                        { "operator": "<", "thresholdValue": "0", "representation": "green", "text": "{0}%" },
+                        { "operator": "Default", "representation": "blue", "text": "{0}%" }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "trend-table"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "trend"
+      },
+      "name": "group-trend"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsOptimization_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by Category, ResourceName, Subscription\n| summarize TotalSavings = round(sum(PotentialSavings), 2), Count = count()\n| project ['Total Waste'] = strcat('$', tostring(TotalSavings), '/mo'), ['Opportunities'] = Count, ['Annualized'] = strcat('$', tostring(round(TotalSavings * 12, 2)))",
+              "size": 4,
+              "title": "Waste Summary",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": { "columnMatch": "Total Waste", "formatter": 1 },
+                "leftContent": { "columnMatch": "Opportunities", "formatter": 1 },
+                "rightContent": { "columnMatch": "Annualized", "formatter": 1 },
+                "showBorder": true
+              }
+            },
+            "name": "waste-summary"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsOptimization_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by Category, ResourceName, Subscription\n| summarize Opportunities = count(), PotentialSavings = round(sum(PotentialSavings), 2) by Category\n| order by PotentialSavings desc",
+              "size": 0,
+              "title": "Savings by Category",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "name": "waste-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsOptimization_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by Category, ResourceName, Subscription\n| project Category, ResourceName, ResourceType, ResourceGroup, Subscription, Recommendation, ['Savings ($/mo)'] = round(PotentialSavings, 2)\n| order by ['Savings ($/mo)'] desc",
+              "size": 0,
+              "title": "Action List",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Savings",
+                    "formatter": 8,
+                    "formatOptions": { "palette": "redGreen" }
+                  },
+                  {
+                    "columnMatch": "Category",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        { "operator": "==", "thresholdValue": "Idle VM", "representation": "warning", "text": "{0}" },
+                        { "operator": "==", "thresholdValue": "Storage Tier", "representation": "info", "text": "{0}" },
+                        { "operator": "==", "thresholdValue": "Orphaned Resource", "representation": "critical", "text": "{0}" },
+                        { "operator": "Default", "representation": "more", "text": "{0}" }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "waste-detail"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsOptimization_CL\n| summarize arg_max(TimeGenerated, *) by Category, ResourceName, Subscription, ScanDate\n| summarize TotalSavings = round(sum(PotentialSavings), 2), Count = count() by ScanDate\n| order by ScanDate asc",
+              "size": 0,
+              "title": "Waste Trend — Are We Reducing Waste?",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "ScanDate",
+                "yAxis": ["TotalSavings"],
+                "seriesLabelSettings": [
+                  { "seriesName": "TotalSavings", "label": "Monthly Waste ($)", "color": "red" }
+                ]
+              }
+            },
+            "name": "waste-trend"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "waste"
+      },
+      "name": "group-waste"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsBudgets_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by BudgetName, Subscription\n| extend DaysInMonth = dayofmonth(endofmonth(now()))\n| extend DaysElapsed = dayofmonth(now())\n| extend DailyBurn = iff(DaysElapsed > 0, round(ActualSpend / DaysElapsed, 2), 0.0)\n| extend ProjectedSpend = round(DailyBurn * DaysInMonth, 2)\n| extend OverBudgetBy = iff(ProjectedSpend > Amount, round(ProjectedSpend - Amount, 2), 0.0)\n| extend DaysUntilBreach = iff(DailyBurn > 0 and Amount > ActualSpend, round((Amount - ActualSpend) / DailyBurn, 0), -1.0)\n| project BudgetName, Subscription, Budget = round(Amount, 2), Spent = round(ActualSpend, 2), ['Daily Burn'] = DailyBurn, ['Days to Breach'] = iff(DaysUntilBreach >= 0, DaysUntilBreach, -1.0), ['Projected EOM'] = ProjectedSpend, ['Over Budget'] = OverBudgetBy, ['% Used'] = round(PctUsed, 1), Risk = RiskLevel\n| order by ['% Used'] desc",
+              "size": 0,
+              "title": "Budget Burn Rate & Breach Forecast",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "% Used",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        { "operator": ">=", "thresholdValue": "90", "representation": "redBright", "text": "{0}%" },
+                        { "operator": ">=", "thresholdValue": "75", "representation": "yellow", "text": "{0}%" },
+                        { "operator": "Default", "representation": "green", "text": "{0}%" }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Risk",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "icons",
+                      "thresholdsGrid": [
+                        { "operator": "==", "thresholdValue": "High", "representation": "4", "text": "{0}" },
+                        { "operator": "==", "thresholdValue": "Medium", "representation": "2", "text": "{0}" },
+                        { "operator": "Default", "representation": "success", "text": "{0}" }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Days to Breach",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        { "operator": "==", "thresholdValue": "-1", "representation": "green", "text": "Safe" },
+                        { "operator": "<=", "thresholdValue": "5", "representation": "redBright", "text": "{0} days" },
+                        { "operator": "<=", "thresholdValue": "10", "representation": "orange", "text": "{0} days" },
+                        { "operator": "Default", "representation": "green", "text": "{0} days" }
+                      ]
+                    }
+                  },
+                  {
+                    "columnMatch": "Over Budget",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        { "operator": ">", "thresholdValue": "0", "representation": "redBright", "text": "${0}" },
+                        { "operator": "Default", "representation": "green", "text": "-" }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "budget-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsBudgets_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by BudgetName, Subscription\n| project BudgetName, Budget = Amount, ['Actual Spend'] = ActualSpend\n| order by ['Actual Spend'] desc",
+              "size": 0,
+              "title": "Budget vs Actual",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "barchart",
+              "chartSettings": {
+                "xAxis": "BudgetName",
+                "yAxis": ["Budget", "Actual Spend"],
+                "seriesLabelSettings": [
+                  { "seriesName": "Budget", "color": "green" },
+                  { "seriesName": "Actual Spend", "color": "orange" }
+                ]
+              }
+            },
+            "name": "budget-chart"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "budgets"
+      },
+      "name": "group-budgets"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsResourceCosts_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by ResourceName, Subscription\n| where isnotempty(ResourceName) and MonthlyCost > 0\n| project ResourceName, ResourceType, ResourceGroup, Subscription, ['Monthly ($)'] = round(MonthlyCost, 2), ['Daily ($)'] = round(DailyCost, 2)\n| order by ['Monthly ($)'] desc\n| take 50",
+              "size": 0,
+              "title": "Top 50 Resources by Cost",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Monthly",
+                    "formatter": 8,
+                    "formatOptions": { "palette": "coldHot" }
+                  }
+                ]
+              }
+            },
+            "name": "resource-cost-table"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsResourceCosts_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by ResourceName, Subscription\n| where isnotempty(ResourceType) and MonthlyCost > 0\n| summarize TotalCost = round(sum(MonthlyCost), 2) by ResourceType\n| order by TotalCost desc\n| take 10",
+              "size": 0,
+              "title": "Cost by Resource Type (Top 10)",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "piechart"
+            },
+            "name": "resource-type-pie"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsResourceCosts_CL\n| where TimeGenerated {TimeRange}\n| summarize arg_max(TimeGenerated, *) by ResourceName, Subscription\n| where isnotempty(ResourceGroup) and MonthlyCost > 0\n| summarize ['Monthly Cost'] = round(sum(MonthlyCost), 2), Resources = count() by ResourceGroup, Subscription\n| order by ['Monthly Cost'] desc\n| take 20",
+              "size": 0,
+              "title": "Cost Allocation by Resource Group",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Monthly Cost",
+                    "formatter": 8,
+                    "formatOptions": { "palette": "coldHot" }
+                  }
+                ]
+              }
+            },
+            "name": "rg-cost-table"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "resources"
+      },
+      "name": "group-resources"
+    },
+    {
+      "type": 12,
+      "content": {
+        "version": "NotebookGroup/1.0",
+        "groupType": "editable",
+        "items": [
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsScanSummary_CL\n| where TimeGenerated {TimeRange}\n| order by TimeGenerated desc\n| take 1\n| extend Status = iff(StepsFailed == 0, 'Healthy', 'Degraded')\n| project Status, ['Steps Run'] = StepsRun, ['Steps Failed'] = StepsFailed, ['Duration (sec)'] = round(DurationSec, 1), ['Last Scan'] = format_datetime(TimeGenerated, 'yyyy-MM-dd HH:mm'), Subscriptions = SubCount",
+              "size": 4,
+              "title": "Scanner Status",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "tiles",
+              "tileSettings": {
+                "titleContent": { "columnMatch": "Status", "formatter": 1 },
+                "leftContent": { "columnMatch": "Last Scan", "formatter": 1 },
+                "rightContent": { "columnMatch": "Duration (sec)", "formatter": 1 },
+                "secondaryContent": { "columnMatch": "Steps Failed", "formatter": 1 },
+                "showBorder": true
+              }
+            },
+            "name": "health-status"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsScanSummary_CL\n| where TimeGenerated {TimeRange}\n| project ['Scan Date'] = format_datetime(TimeGenerated, 'yyyy-MM-dd HH:mm'), ['Steps Run'] = StepsRun, ['Steps Failed'] = StepsFailed, ['Duration (s)'] = round(DurationSec, 1), Subscriptions = SubCount, ['MTD Spend'] = round(TotalActual, 2)\n| order by ['Scan Date'] desc",
+              "size": 0,
+              "title": "Scan History",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "table",
+              "gridSettings": {
+                "formatters": [
+                  {
+                    "columnMatch": "Steps Failed",
+                    "formatter": 18,
+                    "formatOptions": {
+                      "thresholdsOptions": "colors",
+                      "thresholdsGrid": [
+                        { "operator": ">", "thresholdValue": "0", "representation": "redBright", "text": "{0}" },
+                        { "operator": "Default", "representation": "green", "text": "{0}" }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "name": "scan-history"
+          },
+          {
+            "type": 3,
+            "content": {
+              "version": "KqlItem/1.0",
+              "query": "FinOpsScanSummary_CL\n| where TimeGenerated {TimeRange}\n| project ScanTime = TimeGenerated, DurationSec\n| order by ScanTime asc",
+              "size": 0,
+              "title": "Scan Duration Trend",
+              "queryType": 0,
+              "resourceType": "microsoft.operationalinsights/workspaces",
+              "visualization": "linechart",
+              "chartSettings": {
+                "xAxis": "ScanTime",
+                "yAxis": ["DurationSec"],
+                "seriesLabelSettings": [
+                  { "seriesName": "DurationSec", "label": "Duration (seconds)", "color": "green" }
+                ]
+              }
+            },
+            "name": "scan-duration-chart"
+          }
+        ]
+      },
+      "conditionalVisibility": {
+        "parameterName": "selectedTab",
+        "comparison": "isEqualTo",
+        "value": "health"
+      },
+      "name": "group-health"
+    }
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json",
+  "fallbackResourceIds": []
+}

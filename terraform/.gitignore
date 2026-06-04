@@ -1,0 +1,21 @@
+# Terraform state and secrets
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# User-specific config (contains email addresses, subscription filters, etc.)
+terraform.tfvars
+
+# Plan files (may contain secrets)
+*.tfplan
+tfplan*
+
+# Build artifacts and debug output
+tf_output.txt
+deployed_wb.json

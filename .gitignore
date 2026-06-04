@@ -1,0 +1,13 @@
+# Build artifacts
+deploy.zip
+runbook/Run-FinOpsScan-Assembled.ps1
+
+# Terraform (delegated to terraform/.gitignore)
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/.terraform.lock.hcl
+terraform/terraform.tfvars
+terraform/*.tfplan
+terraform/tfplan*
+terraform/crash.log
