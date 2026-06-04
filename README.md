@@ -9,7 +9,7 @@ The automated version of the [Azure FinOps Multitool](https://github.com/z-larse
 
 ---
 
-## Deploy in 5 Minutes
+## Deploy
 
 ### Prerequisites
 
@@ -43,8 +43,6 @@ az automation runbook start \
   --automation-account-name aa-finops-scanner \
   -n Run-FinOpsScan
 ```
-
-That's it. You'll receive your first FinOps assessment email when the scan completes (~10-15 minutes).
 
 ---
 
