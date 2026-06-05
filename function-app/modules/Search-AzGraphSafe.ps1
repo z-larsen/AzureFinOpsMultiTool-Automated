@@ -2,9 +2,21 @@
 # SEARCH-AZGRAPHSAFE.PS1
 # HEADLESS VERSION - Azure Automation compatible (PS 7.2)
 ###########################################################################
-# Purpose: Wrapper around Search-AzGraph with 429 throttle retry.
-#          Runs synchronously in the current thread to preserve Az
-#          authentication context in PS 7.2 Azure Automation.
+# Purpose: Query Azure Resource Graph via the REST API (Invoke-AzRestMethod)
+#          with 429 throttle retry. Runs synchronously in the current thread
+#          to preserve the managed-identity Az context in PS 7.2 Automation.
+#
+# Description:
+# Why REST instead of the Search-AzGraph cmdlet:
+# In the Azure Automation PS 7.2 sandbox the Search-AzGraph cmdlet returns an
+# object array whose row elements deserialize to $null - projected columns are
+# unreachable, leaving report fields (resource name, resource group, etc.)
+# blank. Calling the Resource Graph REST endpoint with resultFormat=objectArray
+# returns clean JSON that ConvertFrom-Json turns into PSCustomObjects with every
+# column as a property, including nested values like row.properties.displayName.
+#
+# Returns a PSCustomObject with Data (row array), SkipToken (string or $null)
+# and Count, matching the shape the calling modules already expect.
 ###########################################################################
 
 function Search-AzGraphSafe {
@@ -14,47 +26,59 @@ function Search-AzGraphSafe {
         [int]$First = 1000,
         [string]$SkipToken,
         [int]$TimeoutSeconds = 60,
-        [int]$MaxRetries = 2
+        [int]$MaxRetries = 3
     )
+
+    $apiVersion = '2022-10-01'
+    $uri = "https://management.azure.com/providers/Microsoft.ResourceGraph/resources?api-version=$apiVersion"
+
+    $options = @{ '$top' = $First; 'resultFormat' = 'objectArray' }
+    if ($SkipToken) { $options['$skipToken'] = $SkipToken }
+
+    $bodyObj = @{ query = $Query; options = $options }
+    if ($Subscription -and $Subscription.Count -gt 0) {
+        $bodyObj['subscriptions'] = @($Subscription)
+    }
+    $payload = $bodyObj | ConvertTo-Json -Depth 10 -Compress
+
     for ($attempt = 0; $attempt -le $MaxRetries; $attempt++) {
-        $result = $null
-        $is429  = $false
         try {
-            $p = @{ Query = $Query; Subscription = $Subscription; First = $First; ErrorAction = 'Stop' }
-            if ($SkipToken) { $p['SkipToken'] = [string]$SkipToken }
-            $r = Search-AzGraph @p
+            $resp = Invoke-AzRestMethod -Method POST -Uri $uri -Payload $payload -ErrorAction Stop
 
-            # v0.9.0 returns data directly; newer versions use .Data property
-            $data = if ($null -ne $r.Data) { @($r.Data) }
-                    elseif ($r -is [System.Collections.IEnumerable] -and $r -isnot [string]) { @($r) }
-                    else { @() }
+            if ($resp.StatusCode -eq 429) {
+                $retryAfter = [math]::Min(10 * [math]::Pow(2, $attempt), 30)
+                Write-Host "  [429 Throttled - Resource Graph] Waiting $($retryAfter)s before retry ($($attempt+1)/$MaxRetries)..."
+                Start-Sleep -Seconds $retryAfter
+                continue
+            }
+            if ($resp.StatusCode -ge 400) {
+                throw "Resource Graph REST error $($resp.StatusCode): $($resp.Content)"
+            }
 
-            # SkipToken may be string or object — coerce to string
+            $parsed = $resp.Content | ConvertFrom-Json
+            $data = if ($parsed.data) { @($parsed.data) } else { @() }
+
             $st = $null
-            if ($r.SkipToken) { $st = [string]$r.SkipToken }
+            if ($parsed.PSObject.Properties.Name -contains '$skipToken') {
+                $st = [string]$parsed.'$skipToken'
+            }
 
-            $result = [PSCustomObject]@{
+            return [PSCustomObject]@{
                 Data      = $data
                 SkipToken = $st
                 Count     = $data.Count
             }
-        } catch {
-            if ($_.Exception.Message -match '429|throttl|Too Many Requests') {
-                $is429 = $true
-            } else {
-                throw
+        }
+        catch {
+            $msg = $_.Exception.Message
+            if (($msg -match '429|throttl|Too Many Requests') -and $attempt -lt $MaxRetries) {
+                $retryAfter = [math]::Min(10 * [math]::Pow(2, $attempt), 30)
+                Write-Host "  [429 Throttled - Resource Graph] Waiting $($retryAfter)s before retry ($($attempt+1)/$MaxRetries)..."
+                Start-Sleep -Seconds $retryAfter
+                continue
             }
+            throw
         }
-
-        if (-not $is429) { return $result }
-
-        # 429 retry with exponential backoff
-        $retryAfter = [math]::Min(10 * [math]::Pow(2, $attempt), 30)
-        Write-Host "  [429 Throttled - Resource Graph] Waiting $($retryAfter)s before retry ($($attempt+1)/$MaxRetries)..."
-        if (Get-Command Update-ScanStatus -ErrorAction SilentlyContinue) {
-            Update-ScanStatus "Resource Graph rate limited - waiting $($retryAfter)s..."
-        }
-        Start-Sleep -Seconds $retryAfter
     }
     return $null
 }

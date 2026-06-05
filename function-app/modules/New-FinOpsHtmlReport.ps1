@@ -475,9 +475,13 @@ footer { margin-top: 40px; padding-top: 15px; border-top: 1px solid #ddd; font-s
         [void]$sb.Append("<h3>Azure Hybrid Benefit Opportunities ($($Data.AHB.TotalOpportunities))</h3>")
         [void]$sb.Append("<p>$($esc::Escape($Data.AHB.Summary))</p>")
         if ($Data.AHB.WindowsVMs.Count -gt 0) {
-            [void]$sb.Append("<table><tr><th>VM Name</th><th>Resource Group</th><th>Size</th><th>Location</th><th>Current License</th></tr>")
+            [void]$sb.Append("<table><tr><th>VM Name</th><th>Resource Group</th><th>Size</th><th>Location</th><th>Current License</th><th class=`"text-right`">Est. Savings/mo</th></tr>")
             foreach ($vm in $Data.AHB.WindowsVMs) {
-                [void]$sb.Append("<tr><td>$($esc::Escape($vm.name))</td><td>$($esc::Escape($vm.resourceGroup))</td><td>$($esc::Escape($vm.vmSize))</td><td>$($esc::Escape($vm.location))</td><td>$($esc::Escape($vm.currentLicense))</td></tr>")
+                $vmEst = if ($vm.estMonthlySavings) { "$sym$(([double]$vm.estMonthlySavings).ToString('N0'))" } else { '-' }
+                [void]$sb.Append("<tr><td>$($esc::Escape($vm.name))</td><td>$($esc::Escape($vm.resourceGroup))</td><td>$($esc::Escape($vm.vmSize))</td><td>$($esc::Escape($vm.location))</td><td>$($esc::Escape($vm.currentLicense))</td><td class=`"text-right`">$vmEst</td></tr>")
+            }
+            if ($Data.AHB.EstMonthlyVMSavings -gt 0) {
+                [void]$sb.Append("<tr style=`"font-weight:700;background:#EBF5FF;`"><td colspan=`"5`">Estimated total monthly savings</td><td class=`"text-right`">$sym$(([double]$Data.AHB.EstMonthlyVMSavings).ToString('N0'))</td></tr>")
             }
             [void]$sb.Append("</table>")
         }

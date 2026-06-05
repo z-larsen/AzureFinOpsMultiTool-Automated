@@ -25,6 +25,7 @@ $modules = @(
     'Get-ResourceCosts.ps1',
     'Get-TagInventory.ps1',
     'Get-CostByTag.ps1',
+    'Get-AhbVmSavingsRatio.ps1',
     'Get-AHBOpportunities.ps1',
     'Get-ReservationAdvice.ps1',
     'Get-OptimizationAdvice.ps1',

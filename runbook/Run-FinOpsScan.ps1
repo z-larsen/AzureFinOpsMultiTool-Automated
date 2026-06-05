@@ -336,10 +336,10 @@ $dataMap = @{
     'anomalyAlerts'  = { if ($data.AnomalyAlerts) { $data.AnomalyAlerts.TriggeredAlerts } }
     'anomalyRules'   = { if ($data.AnomalyAlerts) { $data.AnomalyAlerts.ConfiguredRules } }
     'optimization'   = { if ($data.Optimization -and $data.Optimization.Recommendations) { $data.Optimization.Recommendations } }
-    'orphans'        = { if ($data.Orphans -and $data.Orphans.Resources) { $data.Orphans.Resources } }
+    'orphans'        = { if ($data.Orphans -and $data.Orphans.Orphans) { $data.Orphans.Orphans } }
     'idleVMs'        = { if ($data.IdleVMs) { $data.IdleVMs } }
     'storageTier'    = { if ($data.StorageTier) { $data.StorageTier } }
-    'ahb'            = { if ($data.AHB -and $data.AHB.Opportunities) { $data.AHB.Opportunities } }
+    'ahb'            = { if ($data.AHB) { @($data.AHB.WindowsVMs) + @($data.AHB.SQLVMs) + @($data.AHB.SQLDatabases) } }
     'tags'           = { if ($data.Tags -and $data.Tags.TagNames) { $data.Tags.TagNames.GetEnumerator() | ForEach-Object { [PSCustomObject]@{ TagName = $_.Key; ResourceCount = ($_.Value.ResourceCount ?? 0); UniqueValues = (($_.Value.Values) ? $_.Value.Values.Count : 0) } } } }
     'tagRecs'        = { if ($data.TagRecs -and $data.TagRecs.Recommendations) { $data.TagRecs.Recommendations } }
     'policyInv'      = { if ($data.PolicyInv -and $data.PolicyInv.Assignments) { $data.PolicyInv.Assignments } }
@@ -556,12 +556,12 @@ if ($dceEndpoint -and $dcrImmutableId) {
                 $optRecords.Add(@{
                     TimeGenerated    = $now;  ScanDate = $scanDate
                     Category         = 'Azure Hybrid Benefit'
-                    ResourceName     = [string]($r.Name ?? $r.VMName ?? '')
+                    ResourceName     = [string]($r.name ?? $r.VMName ?? '')
                     ResourceType     = [string]($r.Type ?? $r.ResourceType ?? 'Virtual Machine')
-                    ResourceGroup    = [string]($r.ResourceGroup ?? '')
-                    Subscription     = [string]($r.Subscription ?? '')
+                    ResourceGroup    = [string]($r.resourceGroup ?? '')
+                    Subscription     = [string]($r.subscriptionId ?? $r.Subscription ?? '')
                     Recommendation   = 'Enable Azure Hybrid Benefit'
-                    PotentialSavings = [double]($r.PotentialSavings ?? 0)
+                    PotentialSavings = [double]($r.estMonthlySavings ?? $r.PotentialSavings ?? 0)
                     Currency         = [string]($r.Currency ?? 'USD')
                 })
             }
