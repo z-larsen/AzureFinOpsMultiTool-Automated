@@ -273,10 +273,10 @@ function Read-FinOpsHubData {
             Write-Host "    No parquet in ingestion — reading CSV from msexports..." -ForegroundColor DarkGray
 
             $csvBlobs = @(Get-AzDataLakeGen2ChildItem -Context $ctx -FileSystem 'msexports' -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { -not $_.IsDirectory -and $_.Path -like '*.csv' })
+                Where-Object { -not $_.IsDirectory -and ($_.Path -like '*.csv' -or $_.Path -like '*.csv.gz') })
 
             if ($csvBlobs.Count -gt 0) {
-                # Export layout is: .../<billingPeriod>/<runTimestamp>/<guid>/part_*.csv
+                # Export layout is: .../<billingPeriod>/<runTimestamp>/<guid>/part_*.csv(.gz)
                 # where billingPeriod = yyyyMMdd-yyyyMMdd and runTimestamp = 12 digits.
                 # Group by billing period, and within each period keep only the latest
                 # run. Walking periods newest-first and skipping empty ones means a
@@ -311,9 +311,22 @@ function Read-FinOpsHubData {
                     $periodRows = 0
                     foreach ($blob in $runBlobs) {
                         $localFile = Join-Path $tempDir "$([guid]::NewGuid().ToString('N'))-$(Split-Path $blob.Path -Leaf)"
+                        $csvFile = $localFile
                         try {
                             Get-AzDataLakeGen2ItemContent -Context $ctx -FileSystem 'msexports' -Path $blob.Path -Destination $localFile -Force -ErrorAction Stop | Out-Null
-                            $rows = Import-Csv -Path $localFile
+                            # Newer exports may write gzipped CSV parts (part_*.csv.gz).
+                            # Decompress to a plain .csv before Import-Csv.
+                            if ($localFile -like '*.gz') {
+                                $csvFile = $localFile -replace '\.gz$', ''
+                                $inStream = [System.IO.File]::OpenRead($localFile)
+                                try {
+                                    $gz = New-Object System.IO.Compression.GZipStream($inStream, [System.IO.Compression.CompressionMode]::Decompress)
+                                    $outStream = [System.IO.File]::Create($csvFile)
+                                    try { $gz.CopyTo($outStream) } finally { $outStream.Dispose(); $gz.Dispose() }
+                                }
+                                finally { $inStream.Dispose() }
+                            }
+                            $rows = Import-Csv -Path $csvFile
                             if ($rows -and @($rows).Count -gt 0) {
                                 foreach ($row in $rows) { $allData.Add($row) }
                                 $periodRows += @($rows).Count
@@ -324,6 +337,7 @@ function Read-FinOpsHubData {
                         }
                         finally {
                             Remove-Item $localFile -Force -ErrorAction SilentlyContinue
+                            if ($csvFile -ne $localFile) { Remove-Item $csvFile -Force -ErrorAction SilentlyContinue }
                         }
                     }
 
