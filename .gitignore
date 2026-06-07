@@ -11,3 +11,9 @@ terraform/terraform.tfvars
 terraform/*.tfplan
 terraform/tfplan*
 terraform/crash.log
+
+# Local diagnostic / blob-inspection helpers (not part of the deployable function)
+scripts/Check-JobStreams.ps1
+scripts/List-ScanBlobs.ps1
+scripts/Read-ScanBlob.ps1
+scripts/Read-ScanBlob2.ps1
