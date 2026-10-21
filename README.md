@@ -1,11 +1,11 @@
-# Azure FinOps Multitool — Automated
+# FinOps Explorer — Azure Automation Edition
 
 ![PowerShell 7.2](https://img.shields.io/badge/PowerShell-7.2-blue?logo=powershell&logoColor=white)
 ![Terraform >= 1.5](https://img.shields.io/badge/Terraform-%3E%3D1.5-7B42BC?logo=terraform&logoColor=white)
 ![Azure Automation](https://img.shields.io/badge/Azure-Automation-0078D4?logo=microsoftazure&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
-The automated version of the [Azure FinOps Multitool](https://github.com/z-larsen/Azure-FinOps-Multitool). Same 21 scan modules running unattended in Azure Automation on a daily schedule, delivering an HTML assessment report to your inbox every day.
+This FinOps Explorer Azure Automation edition runs the same 21 scan modules unattended on a daily schedule, delivering an HTML assessment report to your inbox every day. The interactive WPF app is [FinOps Explorer Desktop](https://github.com/z-larsen/Azure-FinOps-Multitool).
 
 ---
 
@@ -217,7 +217,7 @@ az automation job list `
 
 ## Related
 
-- [Azure FinOps Multitool (Desktop)](https://github.com/z-larsen/Azure-FinOps-Multitool) — The interactive WPF version with GUI
+- [FinOps Explorer Desktop](https://github.com/z-larsen/Azure-FinOps-Multitool) — The interactive WPF version with GUI
 - [FinOps Toolkit](https://github.com/microsoft/finops-toolkit) — Microsoft's official FinOps framework
 - [INSTALL-GUIDE.md](INSTALL-GUIDE.md) — Full deployment walkthrough
 

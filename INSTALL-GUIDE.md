@@ -1,12 +1,12 @@
-# FinOps Scanner — Azure Automation Deployment Guide
+# FinOps Explorer — Azure Automation Deployment Guide
 
-This guide walks you through deploying the FinOps Scanner as an Azure Automation runbook. By the end, you'll have a runbook that automatically scans your Azure environment every day and drops the results into blob storage as JSON and CSV files — plus optional dashboard and email delivery.
+This guide walks you through deploying the FinOps Explorer scheduled edition as an Azure Automation runbook. By the end, you'll have a runbook that automatically scans your Azure environment every day and drops the results into blob storage as JSON and CSV files — plus optional dashboard and email delivery.
 
 ---
 
-## How the Automation Version Differs from the GUI based Scanner
+## How the Automation Version Differs from FinOps Explorer Desktop
 
-The original FinOps Multitool is a desktop app — you launch it, click Scan, and see results in a GUI. It runs once on your machine when you tell it to.
+FinOps Explorer Desktop is a desktop app — you launch it, click Scan, and see results in a GUI. It runs once on your machine when you tell it to.
 
 The Automation version:
 
