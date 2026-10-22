@@ -4,17 +4,15 @@ This guide walks you through deploying the FinOps Explorer scheduled edition as 
 
 ---
 
-## How the Automation Version Differs from FinOps Explorer Desktop
+## How the Automation Edition Works
 
-FinOps Explorer Desktop is a desktop app — you launch it, click Scan, and see results in a GUI. It runs once on your machine when you tell it to.
-
-The Automation version:
+The Automation edition:
 
 - **Runs automatically** on a daily schedule (configurable)
-- **No GUI** — it writes structured data (JSON + CSV) to a blob storage container instead of displaying grids
+- **No interactive UI** — it writes structured data (JSON + CSV) to a blob storage container
 - **Authenticates with Managed Identity** — no interactive login, no stored passwords. Azure handles the credentials.
 - **Runs in the cloud** — inside an Azure Automation Account, so there's nothing to host or maintain
-- **Same scan modules** — the 21 scan modules are identical to the desktop version. Same APIs, same logic, same results.
+- **Same scan engine** — the 21 scan modules use the same APIs and logic as the other FinOps Explorer editions.
 - **One-step deployment** — Terraform deploys everything including the runbook code.
 - **Two reporting options** — An Azure Workbook dashboard that queries Log Analytics in real time, and/or an HTML assessment report emailed directly to stakeholders after each scan. Enable one or both.
 
