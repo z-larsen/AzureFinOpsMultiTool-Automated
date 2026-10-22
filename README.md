@@ -5,7 +5,7 @@
 ![Azure Automation](https://img.shields.io/badge/Azure-Automation-0078D4?logo=microsoftazure&logoColor=white)
 ![License MIT](https://img.shields.io/badge/License-MIT-green)
 
-This FinOps Explorer Azure Automation edition runs the same 21 scan modules unattended on a daily schedule, delivering an HTML assessment report to your inbox every day. The interactive WPF app is [FinOps Explorer Desktop](https://github.com/z-larsen/Azure-FinOps-Multitool).
+This FinOps Explorer Azure Automation edition runs the same 21 scan modules unattended on a daily schedule, delivering an HTML assessment report to your inbox every day.
 
 ---
 
@@ -217,7 +217,6 @@ az automation job list `
 
 ## Related
 
-- [FinOps Explorer Desktop](https://github.com/z-larsen/Azure-FinOps-Multitool) — The interactive WPF version with GUI
 - [FinOps Toolkit](https://github.com/microsoft/finops-toolkit) — Microsoft's official FinOps framework
 - [INSTALL-GUIDE.md](INSTALL-GUIDE.md) — Full deployment walkthrough
 
